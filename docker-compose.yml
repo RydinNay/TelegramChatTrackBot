@@ -1,0 +1,91 @@
+version: "3.9"
+
+services:
+  rabbitmq:
+    image: "rabbitmq:3-management"
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER}" ]
+      interval: 5s
+      retries: 5
+
+  bot:
+    build: .
+    container_name: tg_bot
+    depends_on:
+      - rabbitmq
+      - postgres
+    env_file:
+      - .env
+    volumes:
+      - ./.env:/app/.env:ro
+    environment:
+      RABBITMQ_BROKER: "amqp://user:password@rabbitmq:5672//"
+      DB_URL: ${ASYNC_DB_URL}
+    restart: unless-stopped
+
+  celery_worker:
+    build: .
+    container_name: celery_worker
+    depends_on:
+      - rabbitmq
+      - postgres
+    command: celery -A celery_app.celery_config worker --loglevel=INFO
+    env_file:
+      - .env
+    volumes:
+      - ./.env:/app/.env:ro
+    environment:
+      RABBITMQ_BROKER: "amqp://user:password@rabbitmq:5672//"
+      DB_URL: ${ASYNC_DB_URL}
+    restart: unless-stopped
+
+  celery_beat:
+    build: .
+    container_name: celery_beat
+    depends_on:
+      - rabbitmq
+      - postgres
+    command: celery -A celery_app.celery_config beat --loglevel=INFO
+    env_file:
+      - .env
+    volumes:
+      - ./.env:/app/.env:ro
+    environment:
+      RABBITMQ_BROKER: "amqp://user:password@rabbitmq:5672//"
+      DB_URL: ${ASYNC_DB_URL}
+    restart: unless-stopped
+
+  migrations:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["python", "-m", "alembic", "upgrade", "head"]
+    env_file:
+      - .env
+    environment:
+      SYNC_DB_URL: ${SYNC_DB_URL}
+
+volumes:
+  pgdata:
