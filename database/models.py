@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import Integer, String, func, DateTime, Boolean, BigInteger
+from sqlalchemy import Integer, String, func, Date, Boolean, BigInteger
 from database.database import Base, engine
 
 
@@ -13,8 +13,7 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=True)
     source: Mapped[str] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+        Date(), server_default=func.current_date()    )
     is_still_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 async def init_db():

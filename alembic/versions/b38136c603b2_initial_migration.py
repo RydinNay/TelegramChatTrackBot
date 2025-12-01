@@ -26,7 +26,7 @@ def upgrade() -> None:
         sa.Column('tg_id', sa.BigInteger(), nullable=False),
         sa.Column('name', sa.String(length=100), nullable=True),
         sa.Column('source', sa.String(length=100), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.Column('created_at', sa.Date(), server_default=sa.text('CURRENT_DATE'), nullable=False),
         sa.Column('is_still_active', sa.Boolean(), nullable=False, server_default=sa.text('true')),
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('tg_id')
