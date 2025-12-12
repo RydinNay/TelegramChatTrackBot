@@ -13,9 +13,11 @@ main_command_router = Router()
 @main_command_router.message(CommandStart())
 async def start_handler(message: types.Message, command: CommandStart):
     start_param = command.args
-    language = message.from_user.language_code
+    '''language = message.from_user.language_code
     if language not in TEXTS:
         language = "en"
+    '''
+    language = 'ru'
     texts = TEXTS[language]
 
     admins = await message.bot.get_chat_administrators(chat_id=f"{CHANNEL}")
@@ -24,9 +26,10 @@ async def start_handler(message: types.Message, command: CommandStart):
         await message.answer("Нажмите кнопку, чтобы получить отчет:", reply_markup=report_keyboard())
         return
 
-    if start_param:
+    if not start_param:
+        start_param='native_user'
 
-        await message.answer(
+        '''await message.answer(
             f"{texts['start_with_param']} {start_param}\n"
             f"{texts['subscribe_text']}",
             reply_markup=InlineKeyboardMarkup(
@@ -34,19 +37,20 @@ async def start_handler(message: types.Message, command: CommandStart):
                     [InlineKeyboardButton(text=texts['subscribe_button'], url=f"{INVITE_LINK}")]
                 ]
             )
-        )
+        )'''
 
-    else:
-        start_param='native_user'
-        await message.answer(
-            f"{texts['start_no_param']}\n"
-            f"{texts['subscribe_text']}",
-            reply_markup=InlineKeyboardMarkup(
-                inline_keyboard=[
-                    [InlineKeyboardButton(text=texts['subscribe_button'], url=f"{INVITE_LINK}")]
-                ]
-            )
+    # else:
+        # start_param='native_user'
+    await message.answer(
+        f"{texts['start_no_param']}\n"
+        f"{texts['subscribe_text'].format(link=INVITE_LINK)}",
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(text=texts['subscribe_button'], url=f"{INVITE_LINK}")]
+            ]
         )
+    )
 
     user = await UserService.create_user(
         tg_id=message.from_user.id,
